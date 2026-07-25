@@ -1,3 +1,6 @@
+#ifndef ESTER_LOGGING_H
+#define ESTER_LOGGING_H
+
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -157,4 +160,4 @@ void ester_log (const ester_logger_t* logger,
         abort(); \
      }while(0)
 
-
+#endif
