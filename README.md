@@ -26,4 +26,7 @@ ESTER_LOG_WARN(project_name, "Hello") ;
 // do both store log in file and print on terminal
 ESTER_LOGM_WARN(project_name, "Hello") ;
 
+// kill program and call ESTER_LOGM_WARN
+ESTER_ABORT(project_name, "Hello") ;
+
 ```

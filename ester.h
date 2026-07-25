@@ -143,4 +143,18 @@ void ester_log (const ester_logger_t* logger,
                (const char*)format, \
                ##__VA_ARGS__)
 
+#define ESTER_ABORT(logger,format,...) \
+     do \
+     { \
+         ester_log((&logger), \
+               ESTER_ERROR, \
+               ESTER_ALL, \
+               (const char*)__FILE_NAME__, \
+               (const char*)__FUNCTION__, \
+               (const int)__LINE__, \
+               (const char*)format, \
+               ##__VA_ARGS__); \
+        abort(); \
+     }while(0)
+
 
