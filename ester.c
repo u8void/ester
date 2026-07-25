@@ -3,7 +3,7 @@
 
 void ester_log (const ester_logger_t* logger,
                 const ester_log_level_t level,
-                const bool stream_is_file,
+                const ester_stream_t stream,
                 const char* filename,
                 const char* function,
                 const int line,
@@ -28,17 +28,59 @@ void ester_log (const ester_logger_t* logger,
         break;
     }
 
-    FILE* stream;
 
-    if (stream_is_file) stream = fopen(logger->name,"a+");
-    else stream = stdout;
+    switch (stream)
+    {
+        case ESTER_STDOUT: ester_printer(stdout,
+                                      logtag,
+                                      filename,
+                                      function,
+                                      line,
+                                      format);
+        break;
 
-    fprintf(stream," [%s] %s->%s:%d ",logtag,filename,function,line) ;
+        case ESTER_FILE: ester_printer(fopen(logger->name,"a+"),
+                                    logtag,
+                                    filename,
+                                    function,
+                                    line,
+                                    format);
+        break;
 
+        case ESTER_ALL:
+        {
+            ester_printer(stdout,
+                       logtag,
+                       filename,
+                       function,
+                       line,
+                       format);
+
+            ester_printer(fopen(logger->name,"a+"),
+                       logtag,
+                       filename,
+                       function,
+                       line,
+                       format);
+        }
+        break;
+    }
+
+}
+
+void ester_printer(FILE* log_stream,
+                const char* logtag,
+                const char* filename,
+                const char* function,
+                const int line,
+                const char* format,
+                ...)
+{
+    fprintf(log_stream,"[%s] %s->%s:%d ",logtag,filename,function,line) ;
     va_list args;
     va_start(args, format);
-    vfprintf(stream,format, args);
-    fprintf(stream,"\n");
-    fflush(stream);
+    vfprintf(log_stream,format, args);
+    fprintf(log_stream,"\n");
+    fflush(log_stream);
     va_end(args);
 }

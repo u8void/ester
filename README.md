@@ -23,4 +23,7 @@ ESTER_LOGF_WARN(project_name, "Hello") ;
 // display log on terminal
 ESTER_LOG_WARN(project_name, "Hello") ;
 
+// do both store log in file and print on terminal
+ESTER_LOGM_WARN(project_name, "Hello") ;
+
 ```
