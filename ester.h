@@ -1,7 +1,6 @@
-#ifndef ESTER_LOGGING_H
-#define ESTER_LOGGING_H
+#pragma once
 
-#include <stdio.h>
+#include"ester_arg.h"
 #include <stdbool.h>
 
 typedef enum
@@ -14,21 +13,7 @@ typedef enum
 
 typedef struct
 {
-    const char* function;
-    const char* filename;
-    int line ;
-} ester_log_metadata_t ;
-
-typedef struct
-{
-    const char* msg;
-    ester_log_metadata_t metadata;
-} ester_log_msg;
-
-typedef struct
-{
     const char* name;
-    ester_log_msg  msg;
     ester_log_level_t level;
 } ester_logger_t;
 
@@ -39,125 +24,61 @@ typedef enum
     ESTER_ALL
 }ester_stream_t;
 
-void ester_printer(FILE* log_stream,
-                const char* logtag,
-                const char* filename,
-                const char* function,
-                const int line,
-                const char* format,
-                ...);
+int
+ester_printer(const ester_logger_t* logger,
+              const ester_log_level_t level,
+              const ester_arg_t* args,
+              const ester_stream_t stream,
+              const char* function,
+              const char* filename,
+              const char* fmt) ;
 
-void ester_log (const ester_logger_t* logger,
-                const ester_log_level_t level,
-                const ester_stream_t stream_is_file,
-                const char* filename,
-                const char* function,
-                const int line,
-                const char* format,
-                ...);
+#define ESTER_LOG(logger, level, stream, fmt, ...)                 \
+    ester_printer(                                                 \
+        &(logger),                                                 \
+        (level),                                                   \
+        (ester_arg_t[]){ __VA_OPT__(MAP_ARG(__VA_ARGS__)) },       \
+        (stream),                                                  \
+        __FUNCTION__,                                              \
+        __FILE__,                                                  \
+        (fmt)                                                      \
+    )
 
-#define ESTER_LOG_WARN(logger,format,...) \
-     ester_log((&logger), \
-               ESTER_WARN, \
-               ESTER_STDOUT, \
-               (const char*)__FILE_NAME__, \
-               (const char*)__FUNCTION__, \
-               (const int)__LINE__, \
-               (const char*)format, \
-               ##__VA_ARGS__)
 
-#define ESTER_LOG_INFO(logger,format,...) \
-     ester_log((&logger), \
-               ESTER_INFO, \
-               ESTER_STDOUT, \
-               (const char*)__FILE_NAME__, \
-               (const char*)__FUNCTION__, \
-               (const int)__LINE__, \
-               (const char*)format, \
-               ##__VA_ARGS__)
+#define ESTER_LOG_WARN(logger, fmt, ...) \
+    ESTER_LOG(logger, ESTER_WARN, ESTER_STDOUT, fmt __VA_OPT__(,) __VA_ARGS__)
 
-#define ESTER_LOG_ERR(logger,format,...) \
-     ester_log((&logger), \
-               ESTER_ERROR, \
-               ESTER_STDOUT, \
-               (const char*)__FILE_NAME__, \
-               (const char*)__FUNCTION__, \
-               (const int)__LINE__, \
-               (const char*)format, \
-               ##__VA_ARGS__)
+#define ESTER_LOG_INFO(logger, fmt, ...) \
+    ESTER_LOG(logger, ESTER_INFO, ESTER_STDOUT, fmt __VA_OPT__(,) __VA_ARGS__)
 
-#define ESTER_LOGF_WARN(logger,format,...) \
-     ester_log((&logger), \
-               ESTER_WARN, \
-               ESTER_FILE, \
-               (const char*)__FILE_NAME__, \
-               (const char*)__FUNCTION__, \
-               (const int)__LINE__, \
-               (const char*)format, \
-               ##__VA_ARGS__)
+#define ESTER_LOG_ERR(logger, fmt, ...) \
+    ESTER_LOG(logger, ESTER_ERROR, ESTER_STDOUT, fmt __VA_OPT__(,) __VA_ARGS__)
 
-#define ESTER_LOGF_INFO(logger,format,...) \
-     ester_log((&logger), \
-               ESTER_INFO, \
-               ESTER_FILE, \
-               (const char*)__FILE_NAME__, \
-               (const char*)__FUNCTION__, \
-               (const int)__LINE__, \
-               (const char*)format, \
-               ##__VA_ARGS__)
 
-#define ESTER_LOGF_ERR(logger,format,...) \
-     ester_log((&logger), \
-               ESTER_ERROR, \
-               ESTER_FILE, \
-               (const char*)__FILE_NAME__, \
-               (const char*)__FUNCTION__, \
-               (const int)__LINE__, \
-               (const char*)format, \
-               ##__VA_ARGS__)
+#define ESTER_LOGF_WARN(logger, fmt, ...) \
+    ESTER_LOG(logger, ESTER_WARN, ESTER_FILE, fmt __VA_OPT__(,) __VA_ARGS__)
 
-#define ESTER_LOGM_WARN(logger,format,...) \
-     ester_log((&logger), \
-               ESTER_WARN, \
-               ESTER_ALL, \
-               (const char*)__FILE_NAME__, \
-               (const char*)__FUNCTION__, \
-               (const int)__LINE__, \
-               (const char*)format, \
-               ##__VA_ARGS__)
+#define ESTER_LOGF_INFO(logger, fmt, ...) \
+    ESTER_LOG(logger, ESTER_INFO, ESTER_FILE, fmt __VA_OPT__(,) __VA_ARGS__)
 
-#define ESTER_LOGM_INFO(logger,format,...) \
-     ester_log((&logger), \
-               ESTER_INFO, \
-               ESTER_ALL, \
-               (const char*)__FILE_NAME__, \
-               (const char*)__FUNCTION__, \
-               (const int)__LINE__, \
-               (const char*)format, \
-               ##__VA_ARGS__)
+#define ESTER_LOGF_ERR(logger, fmt, ...) \
+    ESTER_LOG(logger, ESTER_ERROR, ESTER_FILE, fmt __VA_OPT__(,) __VA_ARGS__)
 
-#define ESTER_LOGM_ERR(logger,format,...) \
-     ester_log((&logger), \
-               ESTER_ERROR, \
-               ESTER_ALL, \
-               (const char*)__FILE_NAME__, \
-               (const char*)__FUNCTION__, \
-               (const int)__LINE__, \
-               (const char*)format, \
-               ##__VA_ARGS__)
 
-#define ESTER_ABORT(logger,format,...) \
-     do \
-     { \
-         ester_log((&logger), \
-               ESTER_ERROR, \
-               ESTER_ALL, \
-               (const char*)__FILE_NAME__, \
-               (const char*)__FUNCTION__, \
-               (const int)__LINE__, \
-               (const char*)format, \
-               ##__VA_ARGS__); \
-        abort(); \
-     }while(0)
+#define ESTER_LOGM_WARN(logger, fmt, ...) \
+    ESTER_LOG(logger, ESTER_WARN, ESTER_ALL, fmt __VA_OPT__(,) __VA_ARGS__)
 
-#endif
+#define ESTER_LOGM_INFO(logger, fmt, ...) \
+    ESTER_LOG(logger, ESTER_INFO, ESTER_ALL, fmt __VA_OPT__(,) __VA_ARGS__)
+
+#define ESTER_LOGM_ERR(logger, fmt, ...) \
+    ESTER_LOG(logger, ESTER_ERROR, ESTER_ALL, fmt __VA_OPT__(,) __VA_ARGS__)
+
+
+#define ESTER_ABORT(logger, fmt, ...)                              \
+    do                                                             \
+    {                                                              \
+        ESTER_LOG(logger, ESTER_ERROR, ESTER_ALL,                  \
+                  fmt __VA_OPT__(,) __VA_ARGS__);                  \
+        abort();                                                   \
+    } while (0)
