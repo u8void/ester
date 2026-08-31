@@ -3,6 +3,12 @@
 #include"ester_arg.h"
 #include <stdbool.h>
 
+typedef struct
+{
+    const char *data;
+    size_t len;
+} ester_string_t;
+
 typedef enum
 {
     ESTER_ERROR = 0 ,
@@ -15,6 +21,7 @@ typedef struct
 {
     const char* name;
     ester_log_level_t level;
+    int fd ;
 } ester_logger_t;
 
 typedef enum
@@ -24,61 +31,269 @@ typedef enum
     ESTER_ALL
 }ester_stream_t;
 
-int
-ester_printer(const ester_logger_t* logger,
-              const ester_log_level_t level,
-              const ester_arg_t* args,
-              const ester_stream_t stream,
-              const char* function,
-              const char* filename,
-              const char* fmt) ;
+ester_string_t
+ester_format_parser(const ester_arg_t* args,
+                    const char* fmt);
+ester_string_t
+get_metadata(const char* function,
+             const char* filename,
+             const int line,
+             ester_log_level_t level);
 
-#define ESTER_LOG(logger, level, stream, fmt, ...)                 \
-    ester_printer(                                                 \
-        &(logger),                                                 \
-        (level),                                                   \
-        (ester_arg_t[]){ __VA_OPT__(MAP_ARG(__VA_ARGS__)) },       \
-        (stream),                                                  \
-        __FUNCTION__,                                              \
-        __FILE__,                                                  \
-        (fmt)                                                      \
+void ester_printer(ester_logger_t *logger,
+                   ester_stream_t stream,
+                   ester_string_t metadata,
+                   ester_string_t msg);
+
+
+void ester_init_logger(ester_logger_t* logger,
+                 const char* name);
+void ester_destroy_logger(ester_logger_t* logger);
+
+#define ESTER_LOG_INFO(logger,fmt, ...)                                 \
+    ester_printer(&logger,                                              \
+                  ESTER_STDOUT,                                         \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_INFO),  \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt                                               \
+                )                                                       \
     )
 
+#define ESTER_LOG_WARN(logger,fmt, ...)                                 \
+    ester_printer(&logger,                                              \
+                  ESTER_STDOUT,                                         \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_WARN),  \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt                                               \
+                )                                                       \
+    )
 
-#define ESTER_LOG_WARN(logger, fmt, ...) \
-    ESTER_LOG(logger, ESTER_WARN, ESTER_STDOUT, fmt __VA_OPT__(,) __VA_ARGS__)
+#define ESTER_LOG_ERROR(logger,fmt, ...)                                \
+    ester_printer(&logger,                                              \
+                  ESTER_STDOUT,                                         \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_ERROR), \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt                                               \
+                )                                                       \
+    )
 
-#define ESTER_LOG_INFO(logger, fmt, ...) \
-    ESTER_LOG(logger, ESTER_INFO, ESTER_STDOUT, fmt __VA_OPT__(,) __VA_ARGS__)
+#define ESTER_LOG_DEBUG(logger,fmt, ...)                                \
+    ester_printer(&logger,                                              \
+                  ESTER_STDOUT,                                         \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_DEBUG), \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt                                               \
+                )                                                       \
+    )
 
-#define ESTER_LOG_ERR(logger, fmt, ...) \
-    ESTER_LOG(logger, ESTER_ERROR, ESTER_STDOUT, fmt __VA_OPT__(,) __VA_ARGS__)
+#define ESTER_LOGF_INFO(logger,fmt, ...)                                \
+    ester_printer(&logger,                                              \
+                  ESTER_FILE,                                           \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_INFO),  \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt                                               \
+                )                                                       \
+    )
 
+#define ESTER_LOGF_WARN(logger,fmt, ...)                                \
+    ester_printer(&logger,                                              \
+                  ESTER_FILE,                                           \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_WARN),  \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt                                               \
+                )                                                       \
+    )
 
-#define ESTER_LOGF_WARN(logger, fmt, ...) \
-    ESTER_LOG(logger, ESTER_WARN, ESTER_FILE, fmt __VA_OPT__(,) __VA_ARGS__)
+#define ESTER_LOGF_ERROR(logger,fmt, ...)                               \
+    ester_printer(&logger,                                              \
+                  ESTER_FILE,                                           \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_ERROR), \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt                                               \
+                )                                                       \
+    )
 
-#define ESTER_LOGF_INFO(logger, fmt, ...) \
-    ESTER_LOG(logger, ESTER_INFO, ESTER_FILE, fmt __VA_OPT__(,) __VA_ARGS__)
+#define ESTER_LOGF_DEBUG(logger,fmt, ...)                               \
+    ester_printer(&logger,                                              \
+                  ESTER_FILE,                                           \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_DEBUG), \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt                                               \
+                )                                                       \
+    )
 
-#define ESTER_LOGF_ERR(logger, fmt, ...) \
-    ESTER_LOG(logger, ESTER_ERROR, ESTER_FILE, fmt __VA_OPT__(,) __VA_ARGS__)
+#define ESTER_LOGM_INFO(logger,fmt, ...)                                \
+    ester_printer(&logger,                                              \
+                  ESTER_ALL,                                            \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_INFO),  \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt                                               \
+                )                                                       \
+    )
 
+#define ESTER_LOGM_WARN(logger,fmt, ...)                                \
+    ester_printer(&logger,                                              \
+                  ESTER_ALL,                                            \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_WARN),  \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt                                               \
+                )                                                       \
+    )
 
-#define ESTER_LOGM_WARN(logger, fmt, ...) \
-    ESTER_LOG(logger, ESTER_WARN, ESTER_ALL, fmt __VA_OPT__(,) __VA_ARGS__)
+#define ESTER_LOGM_ERROR(logger,fmt, ...)                               \
+    ester_printer(&logger,                                              \
+                  ESTER_ALL,                                            \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_ERROR), \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt                                               \
+                )                                                       \
+    )
 
-#define ESTER_LOGM_INFO(logger, fmt, ...) \
-    ESTER_LOG(logger, ESTER_INFO, ESTER_ALL, fmt __VA_OPT__(,) __VA_ARGS__)
+#define ESTER_LOGM_DEBUG(logger,fmt, ...)                               \
+    ester_printer(&logger,                                              \
+                  ESTER_ALL,                                            \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_DEBUG), \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt                                               \
+                )                                                       \
+    )
 
-#define ESTER_LOGM_ERR(logger, fmt, ...) \
-    ESTER_LOG(logger, ESTER_ERROR, ESTER_ALL, fmt __VA_OPT__(,) __VA_ARGS__)
+#define ESTER_LOGLN_INFO(logger,fmt, ...)                               \
+    ester_printer(&logger,                                              \
+                  ESTER_STDOUT,                                         \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_INFO),  \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt "\n"                                          \
+                )                                                       \
+    )
 
+#define ESTER_LOGLN_WARN(logger,fmt, ...)                               \
+    ester_printer(&logger,                                              \
+                  ESTER_STDOUT,                                         \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_WARN),  \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt "\n"                                          \
+                )                                                       \
+    )
+
+#define ESTER_LOGLN_ERROR(logger,fmt, ...)                              \
+    ester_printer(&logger,                                              \
+                  ESTER_STDOUT,                                         \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_ERROR), \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt "\n"                                          \
+                )                                                       \
+    )
+
+#define ESTER_LOGLN_DEBUG(logger,fmt, ...)                              \
+    ester_printer(&logger,                                              \
+                  ESTER_STDOUT,                                         \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_DEBUG), \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt "\n"                                          \
+                )                                                       \
+    )
+
+#define ESTER_LOGFLN_INFO(logger,fmt, ...)                              \
+    ester_printer(&logger,                                              \
+                  ESTER_FILE,                                           \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_INFO),  \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt "\n"                                          \
+                )                                                       \
+    )
+
+#define ESTER_LOGFLN_WARN(logger,fmt, ...)                              \
+    ester_printer(&logger,                                              \
+                  ESTER_FILE,                                           \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_WARN),  \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt "\n"                                          \
+                )                                                       \
+    )
+
+#define ESTER_LOGFLN_ERROR(logger,fmt, ...)                             \
+    ester_printer(&logger,                                              \
+                  ESTER_FILE,                                           \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_ERROR), \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt "\n"                                          \
+                )                                                       \
+    )
+
+#define ESTER_LOGFLN_DEBUG(logger,fmt, ...)                             \
+    ester_printer(&logger,                                              \
+                  ESTER_FILE,                                           \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_DEBUG), \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt "\n"                                          \
+                )                                                       \
+    )
+
+#define ESTER_LOGMLN_INFO(logger,fmt, ...)                              \
+    ester_printer(&logger,                                              \
+                  ESTER_ALL,                                            \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_INFO),  \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt "\n"                                          \
+                )                                                       \
+    )
+
+#define ESTER_LOGMLN_WARN(logger,fmt, ...)                              \
+    ester_printer(&logger,                                              \
+                  ESTER_ALL,                                            \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_WARN),  \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt "\n"                                          \
+                )                                                       \
+    )
+
+#define ESTER_LOGMLN_ERROR(logger,fmt, ...)                             \
+    ester_printer(&logger,                                              \
+                  ESTER_ALL,                                            \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_ERROR), \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt "\n"                                          \
+                )                                                       \
+    )
+
+#define ESTER_LOGMLN_DEBUG(logger,fmt, ...)                             \
+    ester_printer(&logger,                                              \
+                  ESTER_ALL,                                            \
+                  get_metadata(__func__,__FILE__,__LINE__,ESTER_DEBUG), \
+                  ester_format_parser(                                  \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
+                      fmt "\n"                                          \
+                )                                                       \
+    )
 
 #define ESTER_ABORT(logger, fmt, ...)                              \
     do                                                             \
     {                                                              \
-        ESTER_LOG(logger, ESTER_ERROR, ESTER_ALL,                  \
-                  fmt __VA_OPT__(,) __VA_ARGS__);                  \
+        ESTER_LOGM_ERROR(logger,                                   \
+                  fmt ,__VA_ARGS__);                               \
         abort();                                                   \
     } while (0)

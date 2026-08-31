@@ -6,6 +6,7 @@
     _Generic((x),                                                \
         int:          arg_from_int,                              \
         unsigned int: arg_from_uint,                             \
+        size_t:       arg_from_uint,                             \
         float:        arg_from_float,                            \
         double:       arg_from_double,                           \
         char:         arg_from_char,                             \
@@ -55,15 +56,6 @@ ARG(j)
                   ARG_5, ARG_4, ARG_3, ARG_2, ARG_1) \
     (__VA_ARGS__)
 
-#define TO_STRING(x) _Generic((x), \
-    int: int_to_string,            \
-    size_t: double_to_string,      \
-    double: double_to_string,      \
-    char: char_to_string,          \
-    const void* : ptr_to_string,   \
-    void* : ptr_to_string          \
-)(x)
-
 typedef enum
 {
     ARG_INT,
@@ -78,6 +70,7 @@ typedef enum
 typedef struct
 {
     ester_arg_type_t type;
+    const char *name;
 
     union
     {

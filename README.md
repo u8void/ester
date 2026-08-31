@@ -46,4 +46,7 @@ ESTER_LOGM_WARN(project_name, "Hello") ;
 // kill program and call ESTER_LOGM_WARN
 ESTER_ABORT(project_name, "Hello") ;
 
+// LN suffix make new line after print
+ESTER_LOGLN_WARN(project_name, "Hello") ;
+
 ```
