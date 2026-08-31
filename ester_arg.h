@@ -1,19 +1,31 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdbool.h>
+#include <stdint.h>
 
-#define ARG(x)                                                   \
-    _Generic((x),                                                \
-        int:          arg_from_int,                              \
-        unsigned int: arg_from_uint,                             \
-        float:        arg_from_float,                            \
-        double:       arg_from_double,                           \
-        char:         arg_from_char,                             \
-        char *:       arg_from_string,                           \
-        const char *: arg_from_string,                           \
-        void *:       arg_from_pointer,                          \
-        const void *: arg_from_pointer,                          \
-        default:      arg_from_pointer                           \
+#define ARG(x)                                            \
+    _Generic((x),                                         \
+        signed char:        arg_from_int,                 \
+        short:              arg_from_int,                 \
+        int:                arg_from_int,                 \
+        long:               arg_from_int,                 \
+        long long:          arg_from_int,                 \
+        unsigned char:      arg_from_uint,                \
+        unsigned short:     arg_from_uint,                \
+        unsigned int:       arg_from_uint,                \
+        unsigned long:      arg_from_uint,                \
+        unsigned long long: arg_from_uint,                \
+        _Bool:              arg_from_bool,                \
+        float:              arg_from_float,               \
+        double:             arg_from_double,              \
+        long double:        arg_from_ldouble,             \
+        char:               arg_from_char,                \
+        char *:             arg_from_string,              \
+        const char *:       arg_from_string,              \
+        void *:             arg_from_pointer,             \
+        const void *:       arg_from_pointer,             \
+        default:            arg_from_pointer              \
     )(x)
 
 #define ARG_1(a) \
@@ -55,22 +67,15 @@ ARG(j)
                   ARG_5, ARG_4, ARG_3, ARG_2, ARG_1) \
     (__VA_ARGS__)
 
-#define TO_STRING(x) _Generic((x), \
-    int: int_to_string,            \
-    size_t: double_to_string,      \
-    double: double_to_string,      \
-    char: char_to_string,          \
-    const void* : ptr_to_string,   \
-    void* : ptr_to_string          \
-)(x)
-
 typedef enum
 {
     ARG_INT,
     ARG_UINT,
     ARG_FLOAT,
     ARG_DOUBLE,
+    ARG_LDOUBLE,
     ARG_CHAR,
+    ARG_BOOL,
     ARG_STRING,
     ARG_POINTER
 } ester_arg_type_t;
@@ -78,78 +83,63 @@ typedef enum
 typedef struct
 {
     ester_arg_type_t type;
+    const char *name;
 
     union
     {
-        int i;
-        size_t u;
+        int64_t i;
+        uint64_t u;
         float f;
         double d;
+        long double ld;
         char c;
+        bool b;
         const char *s;
         const void *p;
     };
 } ester_arg_t;
 
-static inline ester_arg_t arg_from_int(int x)
+static inline ester_arg_t arg_from_int(int64_t x)
 {
-    return (ester_arg_t)
-    {
-        .type = ARG_INT,
-        .i = x
-    };
+    return (ester_arg_t){ .type = ARG_INT,   .i = x };
 }
 
-static inline ester_arg_t arg_from_uint(size_t x)
+static inline ester_arg_t arg_from_uint(uint64_t x)
 {
-    return (ester_arg_t)
-    {
-        .type = ARG_UINT,
-        .u = x
-    };
+    return (ester_arg_t){ .type = ARG_UINT,  .u = x };
 }
 
 static inline ester_arg_t arg_from_float(float x)
 {
-    return (ester_arg_t)
-    {
-        .type = ARG_FLOAT,
-        .f = x
-    };
+    return (ester_arg_t){ .type = ARG_FLOAT, .f = x };
 }
 
 static inline ester_arg_t arg_from_double(double x)
 {
-    return (ester_arg_t)
-    {
-        .type = ARG_DOUBLE,
-        .d = x
-    };
+    return (ester_arg_t){ .type = ARG_DOUBLE,.d = x };
+}
+
+static inline ester_arg_t arg_from_ldouble(long double x)
+{
+    return (ester_arg_t){ .type = ARG_LDOUBLE, .ld = x };
 }
 
 static inline ester_arg_t arg_from_char(char x)
 {
-    return (ester_arg_t)
-    {
-        .type = ARG_CHAR,
-        .c = x
-    };
+    return (ester_arg_t){ .type = ARG_CHAR,  .c = x };
+}
+
+static inline ester_arg_t arg_from_bool(bool x)
+{
+    return (ester_arg_t){ .type = ARG_BOOL,  .b = x };
 }
 
 static inline ester_arg_t arg_from_string(const char *x)
 {
-    return (ester_arg_t)
-    {
-        .type = ARG_STRING,
-        .s = x
-    };
+    return (ester_arg_t){ .type = ARG_STRING, .s = x };
 }
 
 static inline ester_arg_t arg_from_pointer(const void *x)
 {
-    return (ester_arg_t)
-    {
-        .type = ARG_POINTER,
-        .p = x
-    };
+    return (ester_arg_t){ .type = ARG_POINTER, .p = x };
 }
