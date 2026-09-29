@@ -19,7 +19,7 @@ typedef enum
 
 typedef struct
 {
-    const char* name;
+    const char* ctx;
     ester_log_level_t level;
     int fd ;
 } ester_logger_t;
@@ -31,34 +31,36 @@ typedef enum
     ESTER_ALL
 }ester_stream_t;
 
-ester_string_t
+const ester_string_t*
 ester_format_parser(const ester_arg_t* args,
                     const char* fmt);
-ester_string_t
-get_metadata(const char* function,
-             const char* filename,
+const ester_string_t*
+get_metadata(const char *restrict function,
+             const char *restrict filename,
+             const char *restrict ctx,
              const int line,
-             ester_log_level_t level);
+             const ester_log_level_t level);
 
-void ester_printer(ester_logger_t *logger,
-                   ester_stream_t stream,
-                   ester_string_t metadata,
-                   ester_string_t msg);
+void ester_printer(const ester_logger_t *restrict logger,
+                   const ester_stream_t stream,
+                   const ester_string_t *restrict metadata,
+                   const ester_string_t *restrict msg);
 
 
 void ester_init_logger(ester_logger_t* logger,
-                 const char* name);
+                       const char* name);
+
 void ester_destroy_logger(ester_logger_t* logger);
 
 
-#define ESTER_LOG(logger,fmt, stream, level,...)                        \
-    ester_printer(&logger,                                              \
-                  stream,                                               \
-                  get_metadata(__func__,__FILE__,__LINE__,level),       \
-                  ester_format_parser(                                  \
-                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},\
-                      fmt                                               \
-                )                                                       \
+#define ESTER_LOG(logger,fmt, stream, level,...)                             \
+    ester_printer(&logger,                                                   \
+                  stream,                                                    \
+                  get_metadata(__func__,__FILE__,logger.ctx,__LINE__,level), \
+                  ester_format_parser(                                       \
+                      (ester_arg_t[]){__VA_OPT__(MAP_ARG(__VA_ARGS__))},     \
+                      fmt                                                    \
+                )                                                            \
     )
 
 #define ESTER_LOG_INFO(logger, fmt, ...) \

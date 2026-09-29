@@ -5,9 +5,9 @@
 #include <sys/uio.h>
 
 void ester_init_logger(ester_logger_t* logger,
-                 const char* name)
+                       const char* name)
 {
-    logger->name = name;
+    logger->ctx = name;
     logger->fd = open(name,
                       O_WRONLY | O_CREAT | O_APPEND,
                       0644);
@@ -259,34 +259,35 @@ bool_to_buffer(char *buffer, bool x)
     }
 }
 
-const char* get_logtag(ester_log_level_t level)
+static const char* get_logtag(ester_log_level_t level)
 {
     const char* logtag;
 
     switch (level)
     {
-        case ESTER_INFO: logtag = "[INFO]";
+        case ESTER_INFO: logtag = "I";
         break;
 
-        case ESTER_WARN: logtag = "[WARN]";
+        case ESTER_WARN: logtag = "W";
         break;
 
-        case ESTER_ERROR: logtag = "[ERROR]";
+        case ESTER_ERROR: logtag = "E";
         break;
 
-        case ESTER_DEBUG: logtag = "[DEBUG]";
+        case ESTER_DEBUG: logtag = "D";
         break;
     }
 
     return logtag;
 }
 
-ester_string_t
+const ester_string_t*
 ester_format_parser(const ester_arg_t *restrict args,
                     const char *restrict fmt)
 {
     static char buffer[8192];
 
+    static ester_string_t msg;
     char *out = buffer;
     size_t k = 0;
 
@@ -349,17 +350,21 @@ ester_format_parser(const ester_arg_t *restrict args,
 
     *out = '\0';
 
-    return (ester_string_t){
+    msg =(ester_string_t)
+    {
         .data = buffer,
         .len = (size_t)(out - buffer)
     };
+
+    return &msg;
 }
 
-inline ester_string_t
-get_metadata(const char *function,
-             const char *filename,
-             int line,
-             ester_log_level_t level)
+const ester_string_t*
+get_metadata(const char *restrict function,
+             const char *restrict filename,
+             const char *restrict ctx,
+             const int line,
+             const ester_log_level_t level)
 {
     static char buffer[1024];
 
@@ -371,6 +376,11 @@ get_metadata(const char *function,
     memcpy(out, tag, len);
     out += len;
     *out++ = ' ';
+    *out++ = '<';
+    len = strlen(ctx);
+    memcpy(out, ctx, len);
+    out += len;
+    *out++ = '>';
     len = strlen(filename);
     memcpy(out, filename, len);
     out += len;
@@ -384,24 +394,27 @@ get_metadata(const char *function,
     *out++ = ' ';
     *out = '\0';
 
-    return (ester_string_t){
+    const ester_string_t* metadata = &(ester_string_t)
+    {
         .data = buffer,
         .len = (size_t)(out - buffer)
     };
+
+    return metadata;
 }
 
-void ester_printer(ester_logger_t *logger,
-                   ester_stream_t stream,
-                   ester_string_t metadata,
-                   ester_string_t msg)
+void ester_printer(const ester_logger_t *restrict logger,
+                   const ester_stream_t stream,
+                   const ester_string_t *restrict metadata,
+                   const ester_string_t *msg)
 {
     struct iovec iov[2];
 
-    iov[0].iov_base = (void *)metadata.data;
-    iov[0].iov_len  = metadata.len;
+    iov[0].iov_base = (void *)metadata->data;
+    iov[0].iov_len  = metadata->len;
 
-    iov[1].iov_base = (void *)msg.data;
-    iov[1].iov_len  = msg.len;
+    iov[1].iov_base = (void *)msg->data;
+    iov[1].iov_len  = msg->len;
 
     switch (stream)
     {
